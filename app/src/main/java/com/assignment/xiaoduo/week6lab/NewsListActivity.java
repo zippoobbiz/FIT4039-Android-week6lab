@@ -1,7 +1,9 @@
 package com.assignment.xiaoduo.week6lab;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -10,6 +12,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
@@ -30,6 +33,8 @@ public class NewsListActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_news_list);
         newsList_lv = (ListView) this.findViewById(R.id.news_list_lv);
         NewsList = new ArrayList<News>();
@@ -39,10 +44,13 @@ public class NewsListActivity extends Activity {
             @Override
             public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
                                     long arg3) {
-                Intent intent = new Intent();
-                intent.setAction(Intent.ACTION_VIEW);
-                intent.addCategory(Intent.CATEGORY_BROWSABLE);
-                intent.setData(Uri.parse(NewsList.get(arg2).getNewsLink()));
+//                Intent intent = new Intent();
+//                intent.setAction(Intent.ACTION_VIEW);
+//                intent.addCategory(Intent.CATEGORY_BROWSABLE);
+//                intent.setData(Uri.parse(NewsList.get(arg2).getNewsLink()));
+                Intent intent = new Intent(NewsListActivity.this, WebViewActivity.class);
+                intent.putExtra("newsLink",NewsList.get(arg2).getNewsLink());
+                intent.putExtra("newsTitle",NewsList.get(arg2).getTitle());
                 startActivity(intent);
             }
 
@@ -97,7 +105,6 @@ public class NewsListActivity extends Activity {
             }
 
             JSONObject object = RequestHelper.get("http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&q=http://www.abc.net.au/news/feed/51120/rss.xml&num=-1");
-                                                    //http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&q=http://www.abc.net.au/news/feed/51120/rss.xml&num=-1
             try{
                 JSONArray entries = object.getJSONObject("responseData").getJSONObject("feed").getJSONArray("entries");
                 for(int i = 0 ; i < entries.length(); i ++)
@@ -105,7 +112,7 @@ public class NewsListActivity extends Activity {
                     News news = new News();
                     JSONObject jo = entries.getJSONObject(i);
                     news.setTitle(jo.getString("title").toString());
-                    news.setDescription(jo.getString("content").toString());
+                    news.setDescription(clearForContent(jo.getString("content").toString()));
                     news.setNewsLink(jo.getString("link").toString());
                     String imageUrl;
                     if(jo.has("mediaGroups"))
@@ -129,8 +136,33 @@ public class NewsListActivity extends Activity {
             {
                 adapter.notifyDataSetChanged();
             }else{
+                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                        NewsListActivity.this);
+                // set title
+                alertDialogBuilder.setTitle("Network anomaly!");
+                // set dialog message
+                alertDialogBuilder
+                        .setMessage("Check your network connection!")
+                        .setCancelable(false)
+                        .setPositiveButton("Okay",new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                LoadNews load = new LoadNews(NewsListActivity.this);
+                                load.execute();
+                            }
+                        });
+                // create alert dialog
+                AlertDialog alertDialog = alertDialogBuilder.create();
+
+                // show it
+                alertDialog.show();
 
             }
         }
+    }
+
+    //get rid of <p> and </p>
+    public String clearForContent(String content)
+    {
+        return content.replace("<p>","").replace("</p>","");
     }
 }

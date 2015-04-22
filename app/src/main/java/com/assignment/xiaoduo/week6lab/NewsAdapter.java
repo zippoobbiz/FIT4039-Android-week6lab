@@ -55,9 +55,16 @@ public class NewsAdapter extends BaseAdapter {
 //        ImageView item_thumbnail_iv = (ImageView) convertView.findViewById(R.id.item_thumbnail_iv);
         item_title_et.setText(news.getTitle());
         item_description_et.setText(news.getDescription());
+        if(news.getImageLink() == null || news.getImageLink().equals(""))
+        {
+            ImageView item_thumbnail_iv = (ImageView) convertView.findViewById(R.id.item_thumbnail_iv);
+            item_thumbnail_iv.setVisibility(View.GONE);
+        }else
+        {
+            new DownloadImageTask((ImageView) convertView.findViewById(R.id.item_thumbnail_iv))
+                    .execute(news.getImageLink());
+        }
 
-        new DownloadImageTask((ImageView) convertView.findViewById(R.id.item_thumbnail_iv))
-                .execute(news.getImageLink());
         return convertView;
     }
 
@@ -66,6 +73,7 @@ public class NewsAdapter extends BaseAdapter {
 
         public DownloadImageTask(ImageView bmImage) {
             this.bmImage = bmImage;
+            bmImage.setImageBitmap(null);
         }
 
         protected Bitmap doInBackground(String... urls) {
